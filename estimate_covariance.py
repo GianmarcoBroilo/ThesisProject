@@ -16,9 +16,7 @@ import datetime
 #from tudatpy.util import result2array
 
 import sys
-#sys.path.insert(0,'/Users/gianmarcobroilo/Desktop/source-code/cmake-build-debug/tudatpy/tudatpy')
-#import kernel
-#from kernel.numerical_simulation.estimation import PodInput
+
 from tudatpy.kernel import constants
 from tudatpy.kernel.interface import spice
 from tudatpy.kernel import numerical_simulation
@@ -140,7 +138,6 @@ Propagate the dynamics of Jupiter and Callisto and extract state transition and 
 #Setup paramaters settings to propagate the state transition matrix
 parameter_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies)
 
-# Create Bias settings 0.5 nrad in both RA and Dec
 
 # Create the parameters that will be estimated
 parameters_to_estimate = estimation_setup.create_parameter_set(parameter_settings, bodies)
@@ -206,21 +203,21 @@ Observation Setup
 # Define the uplink/downlink link ends types
 link_ends_jup = dict()
 link_ends_jup[observation.observed_body] = ("Jupiter", "")
-link_ends_position = dict()
-link_ends_position[observation.observed_body] = ("Callisto","")
+link_ends_cal = dict()
+link_ends_cal[observation.observed_body] = ("Callisto","")
 
 
 # Create observation settings for each link/observable
 observation_settings_list_jup = observation.cartesian_position(link_ends_jup)
-observation_settings_list_position = observation.cartesian_position(link_ends_position)
+observation_settings_list_position = observation.cartesian_position(link_ends_cal)
 
 
 # Define the observations for Callisto
 observations_position = np.arange(simulation_start_epoch,simulation_end_epoch, 2*constants.JULIAN_DAY)
 
-observation_3dposition = observation.tabulated_simulation_settings(
+observation_simulation_settings_cal = observation.tabulated_simulation_settings(
     observation.position_observable_type,
-    link_ends_position,
+    link_ends_cal,
     observations_position,
     reference_link_end_type = observation.observed_body
 )
@@ -238,10 +235,10 @@ observation_simulation_settings_jup = observation.tabulated_simulation_settings(
 
 
 # Add noise level of 15km to position observable
-noise_level_position = 15e3
+noise_level_cal = 15e3
 observation.add_gaussian_noise_to_settings(
-    [observation_3dposition],
-    noise_level_position,
+    [observation_simulation_settings_cal],
+    noise_level_cal,
     observation.position_observable_type
 )
 
@@ -266,7 +263,7 @@ observation_settings_list.append(observation_settings_list_position)
 
 observation_simulation_settings = []
 observation_simulation_settings.append(observation_simulation_settings_jup)
-observation_simulation_settings.append(observation_3dposition)
+observation_simulation_settings.append(observation_simulation_settings_cal)
 
 
 # Create the estimation object for Callisto and Jupiter
@@ -292,11 +289,11 @@ pod_input.define_estimation_settings(
     reintegrate_variational_equations=False)
 
 # Setup the weight matrix W with weights for Callisto and weights for Jupiter
-weights_vlbi = noise_level_jup ** -2
-weights_position = noise_level_position ** -2
+weights_position_jup = noise_level_jup ** -2
+weights_position_cal = noise_level_cal ** -2
 
-pod_input.set_constant_weight_for_observable_and_link_ends(observation.position_observable_type,link_ends_jup,weights_vlbi)
-pod_input.set_constant_weight_for_observable_and_link_ends(observation.position_observable_type,link_ends_position,weights_position)
+pod_input.set_constant_weight_for_observable_and_link_ends(observation.position_observable_type,link_ends_jup,weights_position_jup)
+pod_input.set_constant_weight_for_observable_and_link_ends(observation.position_observable_type,link_ends_cal,weights_position_cal)
 
 
 """"
@@ -318,26 +315,6 @@ plt.title("Correlation between the outputs")
 plt.colorbar()
 plt.tight_layout()
 plt.show()
-
-#%%
-covariance_to_propagate = pod_output.covariance
-propagated_covariance_dict = dict()
-propagated_covariance_rsw_dict_cal = dict()
-propagated_covariance_rsw_dict_jup = dict()
-propagated_formal_errors_dict = dict()
-propagated_formal_errors_rsw_dict_cal = dict()
-propagated_formal_errors_rsw_dict_jup = dict()
-
-for epoch in list(variational_equations_solver.state_history):
-    STM = variational_equations_solver.state_transition_matrix_history[epoch]
-    full_STM = STM
-    # return propagated covariance at epoch
-    propagated_covariance_dict[epoch] = lalg.multi_dot([full_STM, covariance_to_propagate, full_STM.transpose()])
-    propagated_covariance_rsw_dict_cal[epoch] = lalg.multi_dot([rotation_rsw_to_inertial_dict_cal[epoch].T,propagated_covariance_dict[epoch][:3,:3],rotation_rsw_to_inertial_dict_cal[epoch]])
-    propagated_formal_errors_rsw_dict_cal[epoch] = np.sqrt(np.diag(propagated_covariance_rsw_dict_cal[epoch]))
-    propagated_covariance_rsw_dict_jup[epoch] = lalg.multi_dot([rotation_rsw_to_inertial_dict_jup[epoch].T,propagated_covariance_dict[epoch][6:9,6:9],rotation_rsw_to_inertial_dict_jup[epoch]])
-    propagated_formal_errors_rsw_dict_jup[epoch] = np.sqrt(np.diag(propagated_covariance_rsw_dict_jup[epoch]))
-
 
 #%%
 """"
