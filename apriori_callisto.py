@@ -155,8 +155,8 @@ uncertainties_rsw_cal = np.zeros((3,3))
 np.fill_diagonal(uncertainties_rsw_cal,[15e3,15e3,15e3])
 uncertainties_rsw_velocity_cal = np.zeros((3,3))
 np.fill_diagonal(uncertainties_rsw_velocity_cal,[0.15,1.15,0.75])
-covariance_position_initial_cal = lalg.multi_dot([rotation_rsw_to_inertial_dict_cal[simulation_start_epoch],uncertainties_rsw_cal,rotation_rsw_to_inertial_dict_cal[simulation_start_epoch].T])
-covariance_velocity_initial_cal = lalg.multi_dot([rotation_rsw_to_inertial_dict_cal[simulation_start_epoch],uncertainties_rsw_velocity_cal,rotation_rsw_to_inertial_dict_cal[simulation_start_epoch].T])
+covariance_position_initial_cal = lalg.multi_dot([rotation_rsw_to_inertial_dict_cal[simulation_start_epoch],uncertainties_rsw_cal**2,rotation_rsw_to_inertial_dict_cal[simulation_start_epoch].T])
+covariance_velocity_initial_cal = lalg.multi_dot([rotation_rsw_to_inertial_dict_cal[simulation_start_epoch],uncertainties_rsw_velocity_cal**2,rotation_rsw_to_inertial_dict_cal[simulation_start_epoch].T])
 
 """"
 Define global a priori covariance 
