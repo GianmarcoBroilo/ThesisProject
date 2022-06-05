@@ -167,8 +167,8 @@ uncertainties_rsw_cal = np.zeros((3,3))
 np.fill_diagonal(uncertainties_rsw_cal,[15e3,15e3,15e3])
 uncertainties_rsw_velocity_cal = np.zeros((3,3))
 np.fill_diagonal(uncertainties_rsw_velocity_cal,[0.15,1.15,0.75])
-covariance_position_initial_cal = lalg.multi_dot([rotation_rsw_to_inertial_dict_cal[simulation_start_epoch],uncertainties_rsw_cal,rotation_rsw_to_inertial_dict_cal[simulation_start_epoch].T])
-covariance_velocity_initial_cal = lalg.multi_dot([rotation_rsw_to_inertial_dict_cal[simulation_start_epoch],uncertainties_rsw_velocity_cal,rotation_rsw_to_inertial_dict_cal[simulation_start_epoch].T])
+covariance_position_initial_cal = lalg.multi_dot([rotation_rsw_to_inertial_dict_cal[simulation_start_epoch],uncertainties_rsw_cal**2,rotation_rsw_to_inertial_dict_cal[simulation_start_epoch].T])
+covariance_velocity_initial_cal = lalg.multi_dot([rotation_rsw_to_inertial_dict_cal[simulation_start_epoch],uncertainties_rsw_velocity_cal**2,rotation_rsw_to_inertial_dict_cal[simulation_start_epoch].T])
 
 """"
 Define the a priori covariance of Jupiter 
@@ -181,8 +181,8 @@ uncertainties_rsw_jup = np.zeros((3,3))
 np.fill_diagonal(uncertainties_rsw_jup,[1e3,1e3,1e3])
 uncertainties_rsw_velocity_jup = np.zeros((3,3))
 np.fill_diagonal(uncertainties_rsw_velocity_jup,[0.1,0.1,0.1])
-covariance_position_initial_jup = lalg.multi_dot([rotation_rsw_to_inertial_dict_jup[simulation_start_epoch],uncertainties_rsw_jup,rotation_rsw_to_inertial_dict_jup[simulation_start_epoch].T])
-covariance_velocity_initial_jup = lalg.multi_dot([rotation_rsw_to_inertial_dict_jup[simulation_start_epoch],uncertainties_rsw_velocity_jup,rotation_rsw_to_inertial_dict_jup[simulation_start_epoch].T])
+covariance_position_initial_jup = lalg.multi_dot([rotation_rsw_to_inertial_dict_jup[simulation_start_epoch],uncertainties_rsw_jup**2,rotation_rsw_to_inertial_dict_jup[simulation_start_epoch].T])
+covariance_velocity_initial_jup = lalg.multi_dot([rotation_rsw_to_inertial_dict_jup[simulation_start_epoch],uncertainties_rsw_velocity_jup**2,rotation_rsw_to_inertial_dict_jup[simulation_start_epoch].T])
 
 
 """"
@@ -242,8 +242,8 @@ observation.add_gaussian_noise_to_settings(
     observation.position_observable_type
 )
 
-# Add noise levels of roughly 0.5 nrad to Jupiter
-noise_level_jup = 1e3
+# Add noise level of 15km to position observable
+noise_level_jup = 15e3
 observation.add_gaussian_noise_to_settings(
     [observation_simulation_settings_jup],
     noise_level_jup,
