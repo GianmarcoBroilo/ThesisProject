@@ -185,8 +185,8 @@ uncertainties_rsw_io = np.zeros((3,3))
 np.fill_diagonal(uncertainties_rsw_io,[15e3,15e3,15e3])
 uncertainties_rsw_velocity_io = np.zeros((3,3))
 np.fill_diagonal(uncertainties_rsw_velocity_io,[0.15,1.15,0.75])
-covariance_position_initial_io = lalg.multi_dot([rotation_rsw_to_inertial_dict_io[simulation_start_epoch],uncertainties_rsw_io,rotation_rsw_to_inertial_dict_io[simulation_start_epoch].T])
-covariance_velocity_initial_io = lalg.multi_dot([rotation_rsw_to_inertial_dict_io[simulation_start_epoch],uncertainties_rsw_velocity_io,rotation_rsw_to_inertial_dict_io[simulation_start_epoch].T])
+covariance_position_initial_io = lalg.multi_dot([rotation_rsw_to_inertial_dict_io[simulation_start_epoch],uncertainties_rsw_io**2,rotation_rsw_to_inertial_dict_io[simulation_start_epoch].T])
+covariance_velocity_initial_io = lalg.multi_dot([rotation_rsw_to_inertial_dict_io[simulation_start_epoch],uncertainties_rsw_velocity_io**2,rotation_rsw_to_inertial_dict_io[simulation_start_epoch].T])
 
 """"
 Define the a priori covariance of Jupiter 
@@ -199,8 +199,8 @@ uncertainties_rsw_jup = np.zeros((3,3))
 np.fill_diagonal(uncertainties_rsw_jup,[1e3,1e3,1e3])
 uncertainties_rsw_velocity_jup = np.zeros((3,3))
 np.fill_diagonal(uncertainties_rsw_velocity_jup,[0.1,0.1,0.1])
-covariance_position_initial_jup = lalg.multi_dot([rotation_rsw_to_inertial_dict_jup[simulation_start_epoch],uncertainties_rsw_jup,rotation_rsw_to_inertial_dict_jup[simulation_start_epoch].T])
-covariance_velocity_initial_jup = lalg.multi_dot([rotation_rsw_to_inertial_dict_jup[simulation_start_epoch],uncertainties_rsw_velocity_jup,rotation_rsw_to_inertial_dict_jup[simulation_start_epoch].T])
+covariance_position_initial_jup = lalg.multi_dot([rotation_rsw_to_inertial_dict_jup[simulation_start_epoch],uncertainties_rsw_jup**2,rotation_rsw_to_inertial_dict_jup[simulation_start_epoch].T])
+covariance_velocity_initial_jup = lalg.multi_dot([rotation_rsw_to_inertial_dict_jup[simulation_start_epoch],uncertainties_rsw_velocity_jup**2,rotation_rsw_to_inertial_dict_jup[simulation_start_epoch].T])
 
 """"
 Define the a priori covariance of Europa
@@ -214,8 +214,8 @@ uncertainties_rsw_europa = np.zeros((3,3))
 np.fill_diagonal(uncertainties_rsw_europa,[15e3,15e3,15e3])
 uncertainties_rsw_velocity_europa = np.zeros((3,3))
 np.fill_diagonal(uncertainties_rsw_velocity_europa,[0.15,1.15,0.75])
-covariance_position_initial_europa = lalg.multi_dot([rotation_rsw_to_inertial_dict_europa[simulation_start_epoch],uncertainties_rsw_europa,rotation_rsw_to_inertial_dict_europa[simulation_start_epoch].T])
-covariance_velocity_initial_europa = lalg.multi_dot([rotation_rsw_to_inertial_dict_europa[simulation_start_epoch],uncertainties_rsw_velocity_europa,rotation_rsw_to_inertial_dict_europa[simulation_start_epoch].T])
+covariance_position_initial_europa = lalg.multi_dot([rotation_rsw_to_inertial_dict_europa[simulation_start_epoch],uncertainties_rsw_europa**2,rotation_rsw_to_inertial_dict_europa[simulation_start_epoch].T])
+covariance_velocity_initial_europa = lalg.multi_dot([rotation_rsw_to_inertial_dict_europa[simulation_start_epoch],uncertainties_rsw_velocity_europa**2,rotation_rsw_to_inertial_dict_europa[simulation_start_epoch].T])
 
 """"
 Define global a priori covariance 
