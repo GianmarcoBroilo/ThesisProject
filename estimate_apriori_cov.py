@@ -213,7 +213,7 @@ observation_settings_list_position = observation.cartesian_position(link_ends_ca
 
 
 # Define the observations for Callisto
-observations_position = np.arange(simulation_start_epoch,simulation_end_epoch, 2*constants.JULIAN_DAY)
+observations_position = np.arange(simulation_start_epoch,simulation_end_epoch, 90*constants.JULIAN_DAY)
 
 observation_simulation_settings_cal = observation.tabulated_simulation_settings(
     observation.position_observable_type,
@@ -223,7 +223,7 @@ observation_simulation_settings_cal = observation.tabulated_simulation_settings(
 )
 
 # Define the observations for Jupiter position observable
-observation_times_jup = np.arange(simulation_start_epoch,simulation_end_epoch,2*constants.JULIAN_DAY)
+observation_times_jup = np.arange(simulation_start_epoch,simulation_end_epoch,10*constants.JULIAN_DAY)
 
 observation_simulation_settings_jup = observation.tabulated_simulation_settings(
     observation.position_observable_type,
@@ -234,16 +234,16 @@ observation_simulation_settings_jup = observation.tabulated_simulation_settings(
 
 
 
-# Add noise level of 15km to position observable
-noise_level_cal = 15e3
+# Add noise level of 25km to position observable
+noise_level_cal = 25e3
 observation.add_gaussian_noise_to_settings(
     [observation_simulation_settings_cal],
     noise_level_cal,
     observation.position_observable_type
 )
 
-# Add noise level of 15km to position observable
-noise_level_jup = 15e3
+# Add noise level of 10km to position observable
+noise_level_jup = 10e3
 observation.add_gaussian_noise_to_settings(
     [observation_simulation_settings_jup],
     noise_level_jup,
@@ -392,7 +392,7 @@ plt.show()
 Export Covariance Matrix to use as input 
 """
 
-covariance_matrix = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/VLBI/1-0.5/output_covariance_matrix.dat",pod_output.covariance)
+covariance_matrix = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/apriori/output_covariance_matrix.dat",pod_output.covariance)
 
 
 
