@@ -36,8 +36,6 @@ values_icrf = np.vstack(formal_errors_icrf_cal.values())
 alpha = values_icrf[:,0]
 dec = values_icrf[:,1]
 
-alpha_marcsec = alpha*206264806.71915
-delta_marcsec = dec*206264806.71915
 
 fig, axs = plt.subplots(2,figsize=(12, 6))
 fig.suptitle('Propagated uncertainties in Right Ascension and Declination of Callisto')
