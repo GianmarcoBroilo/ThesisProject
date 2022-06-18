@@ -62,7 +62,6 @@ body_settings.get("Io").ephemeris_settings = environment_setup.ephemeris.tabulat
     original_io_ephemeris_settings,initial_time, final_time, time_step)
 
 
-
 # Rotation model
 body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.synchronous("Jupiter",
                                                                                                global_frame_orientation,"Io_Fixed")
@@ -121,11 +120,10 @@ propagator_settings = propagation_setup.propagator.translational(
     termination_condition
 )
 """
-Propagate the dynamics of  Io and extract state transition and sensitivity matrices
+Propagate the dynamics of Io and extract state transition and sensitivity matrices
 """
 #Setup paramaters settings to propagate the state transition matrix
 parameter_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies)
-
 
 # Create the parameters that will be estimated
 parameters_to_estimate = estimation_setup.create_parameter_set(parameter_settings, bodies)
@@ -163,10 +161,12 @@ Define global a priori covariance
 """
 covariance_a_priori = np.block([
     [covariance_position_initial_io, np.zeros((3,3))],
-    [np.zeros((3,3)),covariance_velocity_initial_io],
+    [np.zeros((3,3)),covariance_velocity_initial_io]
 ])
 
+covariance_a_priori2 = np.genfromtxt('/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/IO/covariance_matrix_io_best_prova.dat')
 covariance_a_priori_inverse = np.linalg.inv(covariance_a_priori)
+
 """"
 Observation Setup
 """
@@ -180,12 +180,12 @@ link_ends_stellar[observation.receiver] = ("Earth", "")
 link_ends_stellar[observation.transmitter] = ("Io", "")
 
 # Create observation settings for each link/observable
-observation_settings_list_pos = [observation.cartesian_position(link_ends_io)]
+observation_settings_list_pos = observation.cartesian_position(link_ends_io)
 observation_settings_list_stellar = observation.angular_position(link_ends_stellar)
 
 
-# Define the observations for Io
-observations_position = np.arange(simulation_start_epoch,simulation_end_epoch, 80*constants.JULIAN_DAY)
+# Define the observations for Callisto
+observations_position = np.arange(simulation_start_epoch,simulation_end_epoch, 5*constants.JULIAN_DAY)
 stellar_occ = datetime.datetime(2021,4,2)
 stellar_occ = time_conversion.calendar_date_to_julian_day_since_epoch(stellar_occ)*constants.JULIAN_DAY
 observation_times_io = np.array([stellar_occ])
@@ -203,14 +203,14 @@ observation_simulation_settings_stellar = observation.tabulated_simulation_setti
 )
 
 # Add noise level of 15km to position observable
-noise_level_io = 30e3
+noise_level_io = 150e3
 observation.add_gaussian_noise_to_settings(
     [observation_simulation_settings_pos],
     noise_level_io,
     observation.position_observable_type
 )
 
-noise_level_stellar =  4.8481368e-9
+noise_level_stellar =  0.48481368e-9
 observation.add_gaussian_noise_to_settings(
     [observation_simulation_settings_stellar],
     noise_level_io,
@@ -223,13 +223,13 @@ Estimation setup
 #%%
 # Collect all settings required to simulate the observations
 observation_settings_list = []
-observation_settings_list.append(observation_settings_list_stellar)
-#observation_settings_list.append(observation_settings_list_pos)
+#observation_settings_list.append(observation_settings_list_stellar)
+observation_settings_list.append(observation_settings_list_pos)
 
 observation_simulation_settings = []
-observation_simulation_settings.append(observation_simulation_settings_stellar)
-#observation_simulation_settings.append(observation_simulation_settings_pos)
-# Create the estimation object for Io
+#observation_simulation_settings.append(observation_simulation_settings_stellar)
+observation_simulation_settings.append(observation_simulation_settings_pos)
+# Create the estimation object for Callisto and Jupiter
 estimator = numerical_simulation.Estimator(
     bodies,
     parameters_to_estimate,
@@ -237,7 +237,7 @@ estimator = numerical_simulation.Estimator(
     integrator_settings,
     propagator_settings)
 
-# Simulate required observation on Io
+# Simulate required observation on Callisto and Jupiter
 simulated_observations = estimation.simulate_observations(
     observation_simulation_settings,
     estimator.observation_simulators,
@@ -251,11 +251,11 @@ pod_input = estimation.PodInput(
 pod_input.define_estimation_settings(
     reintegrate_variational_equations=False)
 
-# Setup the weight matrix W with weights for Io
-weights_position_io = noise_level_cal ** -2
+# Setup the weight matrix W with weights for Callisto
+weights_position_io = noise_level_io ** -2
 weights_stellar = noise_level_stellar ** -2
-#pod_input.set_constant_weight_for_observable_and_link_ends(observation.position_observable_type,link_ends_io,weights_position_io)
-pod_input.set_constant_weight_for_observable_and_link_ends(observation.angular_position_type,link_ends_stellar,weights_stellar)
+pod_input.set_constant_weight_for_observable_and_link_ends(observation.position_observable_type,link_ends_io,weights_position_io)
+#pod_input.set_constant_weight_for_observable_and_link_ends(observation.angular_position_type,link_ends_stellar,weights_stellar)
 
 """"
 Run the estimation
@@ -320,7 +320,8 @@ plt.figure(figsize=(9,5))
 plt.plot(ti,values_io[:,0], label = 'R', color = 'salmon')
 plt.plot(ti,values_io[:,1], label = 'S', color = 'orange')
 plt.plot(ti,values_io[:,2], label = 'W', color = 'cornflowerblue')
-#plt.ylim([10e0,10e5])
+#plt.plot(observation_times_io/31536000,10e2,'o')
+plt.ylim([10e1,10e5])
 plt.yscale("log")
 plt.grid(True, which="both", ls="--")
 plt.title("Propagation of $\sigma$ along radial, along-track and cross-track directions Io")
@@ -329,53 +330,9 @@ plt.xlabel('Time [years after J2000]')
 plt.legend()
 plt.show()
 
-
 #%%
 """"
 Export Covariance Matrix to use as input 
 """
+covariance_matrix = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/IO/covariance_matrix_io_best_prova.dat",pod_output.covariance)
 
-covariance_matrix = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/apriori/covariance_matrix_io_best.dat",pod_output.covariance)
-
-
-uncertainty_io = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/best_case/uncertainty_io.dat",values_io)
-
-time_prop = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/best_case/time_prop.dat",time_cal)
-obs = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/best_case/observations_stellar.dat",observation_times_io)
-
-
-
-da_dr = dict()
-dd_dr = dict()
-Ta_dict = dict()
-Td_dict = dict()
-T = dict()
-propagated_icrf_cal = dict()
-formal_errors_icrf_cal = dict()
-for epoch in list(propagated_covariance_dict):
-    Ta_dict[epoch] = np.array([-states[epoch][3],states[epoch][2],0]).reshape(1,3)
-    Td_dict[epoch] = np.array([-states[epoch][2]*states[epoch][4],-states[epoch][3]*states[epoch][4],states[epoch][2]**2+states[epoch][3]**2]).reshape(1,3)
-    da_dr[epoch] = 1/(states[epoch][2]**2 + states[epoch][3]**2)*Ta_dict[epoch]
-    dd_dr[epoch] = 1/(np.linalg.norm(states[epoch][2:4])**2*np.sqrt(states[epoch][2]**2+states[epoch][3]**2))*Td_dict[epoch]
-    T[epoch] = np.vstack((da_dr[epoch],dd_dr[epoch]))
-    propagated_icrf_cal[epoch] = lalg.multi_dot([T[epoch],propagated_covariance_dict[epoch][:3,:3],T[epoch].T])
-    formal_errors_icrf_cal[epoch] = np.sqrt(np.diag(propagated_icrf_cal[epoch]))
-
-values_icrf = np.vstack(formal_errors_icrf_cal.values())
-alpha = values_icrf[:,0]
-dec = values_icrf[:,1]
-
-fig, axs = plt.subplots(2,figsize=(12, 6))
-fig.suptitle('Propagated uncertainties in Right Ascension and Declination of Io')
-
-
-axs[0].plot(tc,alpha, color = 'black')
-axs[0].set_ylabel('Right Ascension [arcsec]')
-axs[0].set_yscale("log")
-axs[0].plot(observation_times_cal/31536000, 10e-2,'o')
-axs[1].plot(tc,dec, color = 'black')
-axs[1].plot(observation_times_cal/31536000, 10e-3,'o')
-axs[1].set_ylabel('Declination [arcsec]')
-axs[1].set_xlabel('Time [years after J2000]')
-axs[1].set_yscale("log")
-plt.show()
