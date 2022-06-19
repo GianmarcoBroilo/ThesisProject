@@ -1,9 +1,4 @@
-## Context
-"""
-This code is used to estimate the covariance matrix that will be used as a new "a priori covariance matrix" in the
-estimation.py script. This model simulates 3D cartesian position observables every 2 days on both Callisto
-with accuracy that is the same as the a priori uncertainty.
-"""
+
 #%%
 
 
@@ -130,7 +125,7 @@ parameter_settings = estimation_setup.parameter.initial_states(propagator_settin
 link_ends_stellar = dict()
 link_ends_stellar[observation.receiver] = ("Earth", "")
 link_ends_stellar[observation.transmitter] = ("Callisto", "")
-bias_stellar = observation.absolute_bias(np.array([3e-9,3e-9]))
+
 parameter_settings.append(estimation_setup.parameter.absolute_observation_bias(link_ends_stellar,observation.angular_position_type))
 # Create the parameters that will be estimated
 parameters_to_estimate = estimation_setup.create_parameter_set(parameter_settings, bodies)
@@ -168,20 +163,18 @@ covariance_a_priori_bias = np.block([
     [covariance_a_priori2,np.zeros((6,2))],
     [np.zeros((2,6)),bias]
 ])
-covariance_a_priori_inverse = np.linalg.inv(covariance_a_priori2)
+covariance_a_priori_inverse = np.linalg.inv(covariance_a_priori_bias)
 """"
 Observation Setup
 """
 #%%
 
 # Define the uplink/downlink link ends types
-link_ends_cal = dict()
-link_ends_cal[observation.observed_body] = ("Callisto","")
 
 
 # Create observation settings for each link/observable
-
-observation_settings_list_stellar = observation.angular_position(link_ends_stellar, bias_settings = bias_stellar)
+bias_stellar = observation.absolute_bias(np.array([3e-9,3e-9]))
+observation_settings_list = observation.angular_position(link_ends_stellar, bias_settings = bias_stellar)
 
 
 # Define the observations for Callisto
@@ -196,7 +189,7 @@ observation_simulation_settings_stellar = observation.tabulated_simulation_setti
 )
 
 
-noise_level_stellar =  4.8481368e-9
+noise_level_cal =  4.8481368e-9
 observation.add_gaussian_noise_to_settings(
     [observation_simulation_settings_stellar],
     noise_level_cal,
@@ -211,13 +204,13 @@ Estimation setup
 estimator = numerical_simulation.Estimator(
     bodies,
     parameters_to_estimate,
-    observation_settings_list,
+    [observation_settings_list],
     integrator_settings,
     propagator_settings)
 
 # Simulate required observation on Callisto and Jupiter
 simulated_observations = estimation.simulate_observations(
-    [observation_simulation_settings],
+    [observation_simulation_settings_stellar],
     estimator.observation_simulators,
     bodies)
 
@@ -230,7 +223,7 @@ pod_input.define_estimation_settings(
     reintegrate_variational_equations=False)
 
 # Setup the weight matrix W with weights for Callisto
-weights_stellar = noise_level_stellar ** -2
+weights_stellar = noise_level_cal ** -2
 pod_input.set_constant_weight_for_observable_and_link_ends(observation.angular_position_type,link_ends_stellar,weights_stellar)
 
 """"
