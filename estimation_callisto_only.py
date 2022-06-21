@@ -126,7 +126,6 @@ Propagate the dynamics of  Callisto and extract state transition and sensitivity
 #Setup paramaters settings to propagate the state transition matrix
 parameter_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies)
 
-
 # Create the parameters that will be estimated
 parameters_to_estimate = estimation_setup.create_parameter_set(parameter_settings, bodies)
 
@@ -163,10 +162,12 @@ Define global a priori covariance
 """
 covariance_a_priori = np.block([
     [covariance_position_initial_cal, np.zeros((3,3))],
-    [np.zeros((3,3)),covariance_velocity_initial_cal],
+    [np.zeros((3,3)),covariance_velocity_initial_cal]
 ])
 
-covariance_a_priori2 = np.genfromtxt('/Users/gianmarcobroilo/Desktop/ThesisResults/apriori/covariance_matrix_callisto_best.dat')
+
+covariance_a_priori2 = np.genfromtxt('/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/final_apriori/covariance_matrix_callisto_best.dat')
+
 covariance_a_priori_inverse = np.linalg.inv(covariance_a_priori2)
 """"
 Observation Setup
@@ -181,7 +182,7 @@ link_ends_stellar[observation.receiver] = ("Earth", "")
 link_ends_stellar[observation.transmitter] = ("Callisto", "")
 
 # Create observation settings for each link/observable
-observation_settings_list_pos = [observation.cartesian_position(link_ends_cal)]
+observation_settings_list_pos = observation.cartesian_position(link_ends_cal)
 observation_settings_list_stellar = observation.angular_position(link_ends_stellar)
 
 
@@ -204,7 +205,7 @@ observation_simulation_settings_stellar = observation.tabulated_simulation_setti
 )
 
 # Add noise level of 15km to position observable
-noise_level_cal = 30e3
+noise_level_cal = 50e3
 observation.add_gaussian_noise_to_settings(
     [observation_simulation_settings_pos],
     noise_level_cal,
@@ -321,7 +322,8 @@ plt.figure(figsize=(9,5))
 plt.plot(tc,values_cal[:,0], label = 'R', color = 'salmon')
 plt.plot(tc,values_cal[:,1], label = 'S', color = 'orange')
 plt.plot(tc,values_cal[:,2], label = 'W', color = 'cornflowerblue')
-#plt.ylim([10e0,10e5])
+plt.plot(observation_times_cal/31536000,10e2,'o')
+plt.ylim([10e1,10e4])
 plt.yscale("log")
 plt.grid(True, which="both", ls="--")
 plt.title("Propagation of $\sigma$ along radial, along-track and cross-track directions Callisto")
@@ -336,15 +338,15 @@ plt.show()
 Export Covariance Matrix to use as input 
 """
 
-covariance_matrix = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/apriori/covariance_matrix_callisto_best.dat",pod_output.covariance)
+covariance_matrix = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/apriori/covariance_matrix_callisto_best_prova.dat",pod_output.covariance)
 
 
-uncertainty_cal = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/best_case/uncertainty_cal.dat",values_cal)
+uncertainty_cal = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/covariances_callisto/uncertainty_cal_best.dat",values_cal)
 
-time_prop = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/best_case/time_prop.dat",time_cal)
-obs = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/best_case/observations_stellar.dat",observation_times_cal)
+time_prop = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/best_case_prova/time_prop.dat",time_cal)
+obs = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/best_case_prova/observations_stellar.dat",observation_times_cal)
 
-
+#%%
 
 da_dr = dict()
 dd_dr = dict()
@@ -371,12 +373,11 @@ fig.suptitle('Propagated uncertainties in Right Ascension and Declination of Cal
 
 
 axs[0].plot(tc,alpha, color = 'black')
-axs[0].set_ylabel('Right Ascension [arcsec]')
+axs[0].set_ylabel('Right Ascension [rad]')
 axs[0].set_yscale("log")
-axs[0].plot(observation_times_cal/31536000, 10e-2,'o')
-axs[1].plot(tc,dec, color = 'black')
-axs[1].plot(observation_times_cal/31536000, 10e-3,'o')
-axs[1].set_ylabel('Declination [arcsec]')
+
+axs[1].plot(time_cal/31536000,dec, color = 'black')
+axs[1].set_ylabel('Declination [rad]')
 axs[1].set_xlabel('Time [years after J2000]')
 axs[1].set_yscale("log")
 plt.show()
