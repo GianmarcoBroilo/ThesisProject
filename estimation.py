@@ -5,11 +5,11 @@ to see the behavior of the uncertainties of the two bodies in the RSW reference 
 Callisto a predicted stellar occultation in 2024 (using SORA) and for Jupiter a combination of VLBI and range observables
 simulated once every JUNO orbit, that is 53.4 days.
 INPUT
-Data type: stellar occultation of Callisto, VLBI and RANGE of Jupiter
+Data type: stellar occultation of Callisto, VLBI of Jupiter
 A priori cov: uncertainties in the state of Callisto and Jupiter in RSW frame
 parameters: initial state of Callisto, initial state of Jupiter
 OUTPUT
-cov: uncertainty and correlation of estimated parameters for both Callisto and Jupiter
+cov: uncertainty and correlation of estimated parameters for both Callisto and Jupiter in RSW and RA-Dec
 """
 #%%
 
