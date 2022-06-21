@@ -20,12 +20,7 @@ from numpy import linalg as lalg
 from matplotlib import pyplot as plt
 import datetime
 # Load tudatpy modules
-#from tudatpy.util import result2array
 
-import sys
-sys.path.insert(0,'/Users/gianmarcobroilo/Desktop/source-code/cmake-build-debug/tudatpy/tudatpy')
-#import kernel
-#from kernel.numerical_simulation.estimation import PodInput
 from tudatpy.kernel import constants
 from tudatpy.kernel.interface import spice
 from tudatpy.kernel import numerical_simulation
@@ -44,9 +39,9 @@ from sklearn.preprocessing import normalize
 spice.load_standard_kernels()
 
 # Set simulation start and end epochs START: 2023-01-01 END: 2027-01-01
-calendar_start = datetime.datetime(2023,10,1)
+calendar_start = datetime.datetime(2023,4,1)
 simulation_start_epoch = time_conversion.calendar_date_to_julian_day_since_epoch(calendar_start)*constants.JULIAN_DAY
-simulation_end_epoch = simulation_start_epoch +  2*constants.JULIAN_YEAR
+simulation_end_epoch = simulation_start_epoch + 2*constants.JULIAN_YEAR
 
 
 ## Environment setup
@@ -147,13 +142,6 @@ Propagate the dynamics of Jupiter and Callisto and extract state transition and 
 #Setup paramaters settings to propagate the state transition matrix
 parameter_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies)
 
-# Create Bias settings 0.5 nrad in both RA and Dec
-link_ends_vlbi = dict()
-link_ends_vlbi[observation.receiver] = ("Earth", "")
-link_ends_vlbi [observation.transmitter] = ("Jupiter", "")
-bias_vlbi = observation.absolute_bias(np.array([0.5e-9,0.5e-9]))
-parameter_settings.append(estimation_setup.parameter.absolute_observation_bias(link_ends_vlbi,observation.angular_position_type))
-
 # Create the parameters that will be estimated
 parameters_to_estimate = estimation_setup.create_parameter_set(parameter_settings, bodies)
 
@@ -199,39 +187,42 @@ np.fill_diagonal(uncertainties_rsw_velocity_jup,[0.1,0.1,0.1])
 covariance_position_initial_jup = lalg.multi_dot([rotation_rsw_to_inertial_dict_jup[simulation_start_epoch],uncertainties_rsw_jup**2,rotation_rsw_to_inertial_dict_jup[simulation_start_epoch].T])
 covariance_velocity_initial_jup = lalg.multi_dot([rotation_rsw_to_inertial_dict_jup[simulation_start_epoch],uncertainties_rsw_velocity_jup**2,rotation_rsw_to_inertial_dict_jup[simulation_start_epoch].T])
 
-bias_jupiter = np.zeros((2,2))
-np.fill_diagonal(bias_jupiter,[0.5e-9,0.5e-9])
 
 """"
 Define global a priori covariance 
 """
+
+
 covariance_a_priori = np.block([
-    [covariance_position_initial_cal, np.zeros((3,3)), np.zeros((3,3)),np.zeros((3,3)),np.zeros((3,2))],
-    [np.zeros((3,3)),covariance_velocity_initial_cal, np.zeros((3,3)), np.zeros((3,3)),np.zeros((3,2))],
-    [np.zeros((3,3)),np.zeros((3,3)),covariance_position_initial_jup, np.zeros((3,3)),np.zeros((3,2))],
-    [np.zeros((3,3)),np.zeros((3,3)), np.zeros((3,3)), covariance_velocity_initial_jup,np.zeros((3,2))],
-    [np.zeros((2, 3)), np.zeros((2, 3)), np.zeros((2, 3)), np.zeros((2, 3)), bias_jupiter]
+    [covariance_position_initial_cal,np.zeros((3,3)),np.zeros((3,3)), np.zeros((3,3))],
+    [np.zeros((3,3)),covariance_velocity_initial_cal,np.zeros((3,3)), np.zeros((3,3))],
+    [np.zeros((3,3)),np.zeros((3,3)),covariance_position_initial_jup, np.zeros((3,3))],
+    [np.zeros((3,3)),np.zeros((3,3)), np.zeros((3,3)), covariance_velocity_initial_jup]
 ])
-covariance_a_priori_inverse = np.linalg.inv(covariance_a_priori)
+covariance_a_priori2 = np.genfromtxt('/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/final_apriori/output_covariance_cal_jup_nominal.dat')
+covariance_a_priori_inverse = np.linalg.inv(covariance_a_priori2)
 """"
 Observation Setup
 """
 #%%
 
+
+
 # Define the uplink/downlink link ends types
 link_ends_stellar = dict()
 link_ends_stellar[observation.receiver] = ("Earth", "")
 link_ends_stellar[observation.transmitter] = ("Callisto", "")
+link_ends_vlbi = dict()
+link_ends_vlbi[observation.receiver] = ("Earth", "")
+link_ends_vlbi [observation.transmitter] = ("Jupiter", "")
 
-link_ends_position = dict()
-link_ends_position[observation.observed_body] = ("Callisto","")
 
 
 # Create observation settings for each link/observable
 observation_settings_list_cal = observation.angular_position(link_ends_stellar)
-observation_settings_list_jup = observation.angular_position(link_ends_vlbi, bias_settings = bias_vlbi)
-observation_settings_list_position = observation.cartesian_position(link_ends_position)
-observation_settings_list_range = observation.one_way_range(link_ends_vlbi)
+observation_settings_list_jup = observation.angular_position(link_ends_vlbi)
+
+
 
 # Define the observations for Callisto stellar occultation and 3D position
 stellar_occ = datetime.datetime(2024,1,15)
@@ -247,31 +238,13 @@ observation_simulation_settings_cal = observation.tabulated_simulation_settings(
     observation_times_cal
 )
 
-observation_3dposition = observation.tabulated_simulation_settings(
-    observation.position_observable_type,
-    link_ends_position,
-    observations_position,
-    reference_link_end_type = observation.observed_body
-)
 
-# Define the observations for Jupiter VLBI and RANGE
-end = datetime.datetime(2024,2,1)
-end = time_conversion.calendar_date_to_julian_day_since_epoch(end)*constants.JULIAN_DAY
-end2 = datetime.datetime(2025,10,20)
-end2 = time_conversion.calendar_date_to_julian_day_since_epoch(end2)*constants.JULIAN_DAY
 
-observation_times_jup1 = np.arange(simulation_start_epoch,end,53.4*constants.JULIAN_DAY)
-observation_times_jup2 = np.arange(end,end2,33*constants.JULIAN_DAY)
-observation_times_jup = np.append(observation_times_jup1,observation_times_jup2)
-#observation_times_jup = np.arange(simulation_start_epoch,simulation_end_epoch,53.4*constants.JULIAN_DAY)
+# Define the observations for Jupiter VLBI
+
+observation_times_jup = np.arange(simulation_start_epoch,simulation_end_epoch,53.4*constants.JULIAN_DAY)
 observation_simulation_settings_jup = observation.tabulated_simulation_settings(
     observation.angular_position_type,
-    link_ends_vlbi,
-    observation_times_jup
-)
-
-observation_simulation_settings_range = observation.tabulated_simulation_settings(
-    observation.one_way_range_type,
     link_ends_vlbi,
     observation_times_jup
 )
@@ -285,13 +258,6 @@ observation.add_gaussian_noise_to_settings(
     observation.angular_position_type
 )
 
-# Add noise level of 15km to position observable
-noise_level_position = 15e3
-observation.add_gaussian_noise_to_settings(
-    [observation_3dposition],
-    noise_level_position,
-    observation.position_observable_type
-)
 
 # Add noise levels of roughly 0.5 nrad to Jupiter
 noise_level_jup = 0.5e-9
@@ -301,13 +267,6 @@ observation.add_gaussian_noise_to_settings(
     observation.angular_position_type
 )
 
-# Add noise level of 10m to Jupiter
-noise_level_range = 10
-observation.add_gaussian_noise_to_settings(
-    [observation_simulation_settings_range],
-    noise_level_range,
-    observation.one_way_range_type
-)
 
 """"
 Estimation setup
@@ -315,16 +274,14 @@ Estimation setup
 #%%
 # Collect all settings required to simulate the observations
 observation_settings_list = []
-#observation_settings_list.append(observation_settings_list_cal)
+observation_settings_list.append(observation_settings_list_cal)
 observation_settings_list.append(observation_settings_list_jup)
-#observation_settings_list.append(observation_settings_list_position)
-#observation_settings_list.append(observation_settings_list_range)
+
 
 observation_simulation_settings = []
-#observation_simulation_settings.append(observation_simulation_settings_cal)
+observation_simulation_settings.append(observation_simulation_settings_cal)
 observation_simulation_settings.append(observation_simulation_settings_jup)
-#observation_simulation_settings.append(observation_3dposition)
-#observation_simulation_settings.append(observation_simulation_settings_range)
+
 
 # Create the estimation object for Callisto and Jupiter
 estimator = numerical_simulation.Estimator(
@@ -351,12 +308,10 @@ pod_input.define_estimation_settings(
 # Setup the weight matrix W with weights for Callisto and weights for Jupiter
 weights_vlbi = noise_level_jup ** -2
 weights_stellar = noise_level_cal ** -2
-weights_position = noise_level_position ** -2
-weights_range = noise_level_range ** -2
+
 pod_input.set_constant_weight_for_observable_and_link_ends(observation.angular_position_type,link_ends_vlbi,weights_vlbi)
-#pod_input.set_constant_weight_for_observable_and_link_ends(observation.angular_position_type,link_ends_stellar,weights_stellar)
-#pod_input.set_constant_weight_for_observable_and_link_ends(observation.position_observable_type,link_ends_position,weights_position)
-#pod_input.set_constant_weight_for_observable_and_link_ends(observation.one_way_range_type,link_ends_vlbi,weights_range)
+pod_input.set_constant_weight_for_observable_and_link_ends(observation.angular_position_type,link_ends_stellar,weights_stellar)
+
 
 """"
 Run the estimation
@@ -364,7 +319,6 @@ Run the estimation
 # Perform estimation (this also prints the residuals and partials)
 convergence = estimation.estimation_convergence_checker(1)
 pod_output = estimator.perform_estimation(pod_input, convergence_checker=convergence)
-
 
 
 """"
@@ -413,7 +367,7 @@ propagated_covariance_rsw_dict_jup = dict()
 propagated_formal_errors_rsw_dict_cal = dict()
 propagated_formal_errors_rsw_dict_jup = dict()
 
-time = np.arange(simulation_start_epoch, simulation_end_epoch, 43200)
+time = np.arange(simulation_start_epoch, simulation_end_epoch, 86400)
 time = np.ndarray.tolist(time)
 
 propagation = estimation.propagate_covariance_split_output(initial_covariance= cov_initial,state_transition_interface = state_transition,output_times = time)
@@ -447,7 +401,8 @@ plt.figure(figsize=(9,5))
 plt.plot(tc,values_cal[:,0], label = 'R', color = 'salmon')
 plt.plot(tc,values_cal[:,1], label = 'S', color = 'orange')
 plt.plot(tc,values_cal[:,2], label = 'W', color = 'cornflowerblue')
-#plt.plot(observation_times_cal/31536000, 100,'o')
+plt.plot(observation_times_cal/31536000, 1000,'o')
+plt.ylim([10e1,10e4])
 plt.yscale("log")
 plt.grid(True, which="both", ls="--")
 plt.title("Propagation of $\sigma$ along radial, along-track and cross-track directions Callisto")
@@ -460,6 +415,7 @@ plt.figure(figsize=(9,5))
 plt.plot(tj,values_jup[:,0], label = 'R', color = 'salmon')
 plt.plot(tj,values_jup[:,1], label = 'S', color = 'orange')
 plt.plot(tj,values_jup[:,2], label = 'W', color = 'cornflowerblue')
+plt.ylim([1e0,10e4])
 plt.yscale("log")
 plt.grid(True, which="both", ls="--")
 plt.title("Propagation of $\sigma$ along radial, along-track and cross-track directions Jupiter")
@@ -473,12 +429,12 @@ Export data
 """
 from tudatpy.util import result2array
 state_array = result2array(states)
-initial_state = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/VLBI/1-0.5/initial_state.dat",state_array)
-uncertainty_cal = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/VLBI/1-0.5/position/uncertainty_cal.dat",values_cal)
-uncertainty_jup = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/VLBI/1-0.5/position/uncertainty_jup.dat",values_jup)
-time_prop = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/VLBI/1-0.5/time_prop.dat",time_cal)
-obs = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/VLBI/1-0.5/observations_stellar.dat",observation_times_cal)
-obs2 = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/VLBI/1-0.5/observations_vlbi.dat",observation_times_jup)
+initial_state = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/1-0.5/initial_state.dat",state_array)
+uncertainty_cal = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/covariances_callisto/uncertainty_cal_1_05.dat",values_cal)
+uncertainty_jup = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/1-0.5prova/uncertainty_jup.dat",values_jup)
+time_prop = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/1-0.5prova/time_prop.dat",time_cal)
+obs = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/1-0.5prova/observations_stellar.dat",observation_times_cal)
+obs2 = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/1-0.5prova/observations_vlbi.dat",observation_times_jup)
 
 
 #%%
@@ -486,32 +442,37 @@ obs2 = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/VLBI/1-0.5/obser
 Propagate RA and DEC of Jupiter  
 """
 
-T = np.block([
-    [-8.34313652508797e-14,-1.73092383777687e-14,1.34742402731453e-12],
-    [-2.74811677043994e-13,1.32460556046833e-12,0]
-])
-
-propagated_icrf_jup = dict()
-formal_errors_icrf_jup = dict()
+da_dr = dict()
+dd_dr = dict()
+Ta_dict = dict()
+Td_dict = dict()
+T = dict()
+propagated_icrf_cal = dict()
+formal_errors_icrf_cal = dict()
 for epoch in list(propagated_covariance_dict):
-    propagated_icrf_jup[epoch] = lalg.multi_dot([T,propagated_covariance_dict[epoch][6:9,6:9],T.T])
-    formal_errors_icrf_jup[epoch] = np.sqrt(np.diag(propagated_icrf_jup[epoch]))
+    Ta_dict[epoch] = np.array([-states[epoch][3],states[epoch][2],0]).reshape(1,3)
+    Td_dict[epoch] = np.array([-states[epoch][2]*states[epoch][4],-states[epoch][3]*states[epoch][4],states[epoch][2]**2+states[epoch][3]**2]).reshape(1,3)
+    da_dr[epoch] = 1/(states[epoch][2]**2 + states[epoch][3]**2)*Ta_dict[epoch]
+    dd_dr[epoch] = 1/(np.linalg.norm(states[epoch][2:4])**2*np.sqrt(states[epoch][2]**2+states[epoch][3]**2))*Td_dict[epoch]
+    T[epoch] = np.vstack((da_dr[epoch],dd_dr[epoch]))
+    propagated_icrf_cal[epoch] = lalg.multi_dot([T[epoch],propagated_covariance_dict[epoch][:3,:3],T[epoch].T])
+    formal_errors_icrf_cal[epoch] = np.sqrt(np.diag(propagated_icrf_cal[epoch]))
 
-values_icrf = np.vstack(formal_errors_icrf_jup.values())
+values_icrf = np.vstack(formal_errors_icrf_cal.values())
 alpha = values_icrf[:,0]
 dec = values_icrf[:,1]
 
-alpha_marcsec = alpha*206264806.71915
-delta_marcsec = dec*206264806.71915
-
 fig, axs = plt.subplots(2,figsize=(12, 6))
-fig.suptitle('Propagated uncertainties in Right Ascension and Declination of Jupiter')
+fig.suptitle('Propagated uncertainties in Right Ascension and Declination of Callisto')
 
 
-axs[0].plot(tj,alpha_marcsec,'o', color = 'black')
-axs[0].set_ylabel('Right Ascension [mas]')
-
-axs[1].plot(time_cal/31536000,delta_marcsec,'o', color = 'black')
-axs[1].set_ylabel('Declination [mas]')
+axs[0].plot(tj,alpha, color = 'black')
+axs[0].set_ylabel('Right Ascension [rad]')
+axs[0].set_yscale("log")
+axs[0].plot(observation_times_cal/31536000, 10e-4,'o')
+axs[1].plot(time_cal/31536000,dec, color = 'black')
+axs[1].set_ylabel('Declination [rad]')
 axs[1].set_xlabel('Time [years after J2000]')
+axs[1].set_yscale("log")
+axs[1].plot(observation_times_cal/31536000, 10e-4,'o')
 plt.show()
