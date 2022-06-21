@@ -1,4 +1,9 @@
-
+## Context
+"""
+This code is used to estimate the covariance matrix that will be used as a new "a priori covariance matrix" in the
+estimation.py script. This model simulates 3D cartesian position observables every 2 days on both Callisto
+with accuracy that is the same as the a priori uncertainty.
+"""
 #%%
 
 
@@ -153,7 +158,7 @@ for epoch in list(variational_equations_solver.state_history):
     rotation_rsw_to_inertial_dict_cal[epoch] = frame_conversion.rsw_to_inertial_rotation_matrix(states[epoch][:6]).reshape(3,3)
 
 bias = np.zeros((2,2))
-np.fill_diagonal(bias,[3e-9**2,3e-9**2])
+np.fill_diagonal(bias,[4e-9**2,4e-9**2])
 """"
 Define global a priori covariance 
 """
