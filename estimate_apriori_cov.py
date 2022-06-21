@@ -213,7 +213,7 @@ observation_settings_list_position = observation.cartesian_position(link_ends_ca
 
 
 # Define the observations for Callisto
-observations_position = np.arange(simulation_start_epoch,simulation_end_epoch, 90*constants.JULIAN_DAY)
+observations_position = np.arange(simulation_start_epoch,simulation_end_epoch, 10*constants.JULIAN_DAY)
 
 observation_simulation_settings_cal = observation.tabulated_simulation_settings(
     observation.position_observable_type,
@@ -223,7 +223,7 @@ observation_simulation_settings_cal = observation.tabulated_simulation_settings(
 )
 
 # Define the observations for Jupiter position observable
-observation_times_jup = np.arange(simulation_start_epoch,simulation_end_epoch,10*constants.JULIAN_DAY)
+observation_times_jup = np.arange(simulation_start_epoch,simulation_end_epoch,2*constants.JULIAN_DAY)
 
 observation_simulation_settings_jup = observation.tabulated_simulation_settings(
     observation.position_observable_type,
@@ -235,7 +235,7 @@ observation_simulation_settings_jup = observation.tabulated_simulation_settings(
 
 
 # Add noise level of 25km to position observable
-noise_level_cal = 25e3
+noise_level_cal = 100e3
 observation.add_gaussian_noise_to_settings(
     [observation_simulation_settings_cal],
     noise_level_cal,
@@ -331,7 +331,7 @@ propagated_covariance_rsw_dict_jup = dict()
 propagated_formal_errors_rsw_dict_cal = dict()
 propagated_formal_errors_rsw_dict_jup = dict()
 
-time = np.arange(simulation_start_epoch, simulation_end_epoch, 43200)
+time = np.arange(simulation_start_epoch, simulation_end_epoch, 86400)
 time = np.ndarray.tolist(time)
 
 propagation = estimation.propagate_covariance_split_output(initial_covariance= cov_initial,state_transition_interface = state_transition,output_times = time)
@@ -366,7 +366,7 @@ plt.plot(tc,values_cal[:,0], label = 'R', color = 'salmon')
 plt.plot(tc,values_cal[:,1], label = 'S', color = 'orange')
 plt.plot(tc,values_cal[:,2], label = 'W', color = 'cornflowerblue')
 #plt.plot(observation_times_cal/31536000, 100,'o')
-plt.ylim([10e0,10e5])
+plt.ylim([10e1,10e4])
 plt.yscale("log")
 plt.grid(True, which="both", ls="--")
 plt.title("Propagation of $\sigma$ along radial, along-track and cross-track directions Callisto")
@@ -380,7 +380,7 @@ plt.plot(tj,values_jup[:,0], label = 'R', color = 'salmon')
 plt.plot(tj,values_jup[:,1], label = 'S', color = 'orange')
 plt.plot(tj,values_jup[:,2], label = 'W', color = 'cornflowerblue')
 plt.yscale("log")
-plt.ylim([10e0,10e3])
+plt.ylim([10e1,10e4])
 plt.grid(True, which="both", ls="--")
 plt.title("Propagation of $\sigma$ along radial, along-track and cross-track directions Jupiter")
 plt.ylabel('Uncertainty $\sigma$ [m]')
@@ -392,7 +392,44 @@ plt.show()
 Export Covariance Matrix to use as input 
 """
 
-covariance_matrix = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/apriori/output_covariance_matrix.dat",pod_output.covariance)
+#covariance_matrix = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/final_apriori/output_covariance_cal_jup_worst_case.dat",pod_output.covariance)
+#%%
+""""
+Propagate RA and DEC of Jupiter  
+"""
 
+da_dr = dict()
+dd_dr = dict()
+Ta_dict = dict()
+Td_dict = dict()
+T = dict()
+propagated_icrf_cal = dict()
+formal_errors_icrf_cal = dict()
+for epoch in list(propagated_covariance_dict):
+    Ta_dict[epoch] = np.array([-states[epoch][3],states[epoch][2],0]).reshape(1,3)
+    Td_dict[epoch] = np.array([-states[epoch][2]*states[epoch][4],-states[epoch][3]*states[epoch][4],states[epoch][2]**2+states[epoch][3]**2]).reshape(1,3)
+    da_dr[epoch] = 1/(states[epoch][2]**2 + states[epoch][3]**2)*Ta_dict[epoch]
+    dd_dr[epoch] = 1/(np.linalg.norm(states[epoch][2:4])**2*np.sqrt(states[epoch][2]**2+states[epoch][3]**2))*Td_dict[epoch]
+    T[epoch] = np.vstack((da_dr[epoch],dd_dr[epoch]))
+    propagated_icrf_cal[epoch] = lalg.multi_dot([T[epoch],propagated_covariance_dict[epoch][:3,:3],T[epoch].T])
+    formal_errors_icrf_cal[epoch] = np.sqrt(np.diag(propagated_icrf_cal[epoch]))
+
+values_icrf = np.vstack(formal_errors_icrf_cal.values())
+alpha = values_icrf[:,0]
+dec = values_icrf[:,1]
+
+fig, axs = plt.subplots(2,figsize=(12, 6))
+fig.suptitle('Propagated uncertainties in Right Ascension and Declination of Callisto')
+
+
+axs[0].plot(tc,alpha, color = 'black')
+axs[0].set_ylabel('Right Ascension [rad]')
+axs[0].set_yscale("log")
+
+axs[1].plot(tc,dec, color = 'black')
+axs[1].set_ylabel('Declination [rad]')
+axs[1].set_xlabel('Time [years after J2000]')
+axs[1].set_yscale("log")
+plt.show()
 
 
