@@ -1,8 +1,7 @@
 ## Context
 """
-This code is used to estimate the covariance matrix that will be used as a new "a priori covariance matrix" in the
-estimation.py script. This model simulates 3D cartesian position observables every 2 days on both Callisto
-with accuracy that is the same as the a priori uncertainty.
+This code is used to estimate the initial state of Callisto as well as the absolute observation bias
+Current: a-priori bias: 4mas, bias to the observation: 3 mas
 """
 #%%
 
@@ -158,7 +157,7 @@ for epoch in list(variational_equations_solver.state_history):
     rotation_rsw_to_inertial_dict_cal[epoch] = frame_conversion.rsw_to_inertial_rotation_matrix(states[epoch][:6]).reshape(3,3)
 
 bias = np.zeros((2,2))
-np.fill_diagonal(bias,[4e-9**2,4e-9**2])
+np.fill_diagonal(bias,[1.93925472e-8**2,1.93925472e-8**2])
 """"
 Define global a priori covariance 
 """
@@ -178,7 +177,7 @@ Observation Setup
 
 
 # Create observation settings for each link/observable
-bias_stellar = observation.absolute_bias(np.array([3e-9,3e-9]))
+bias_stellar = observation.absolute_bias(np.array([1.45444104e-8,1.45444104e-8]))
 observation_settings_list = observation.angular_position(link_ends_stellar, bias_settings = bias_stellar)
 
 
