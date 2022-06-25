@@ -288,13 +288,12 @@ tc = time_cal/31536000
 """"
 Plot the propagated uncertainties  
 """
-
 plt.figure(figsize=(9,5))
-plt.plot(tc,values_cal[:,0], label = 'R', color = 'salmon')
-plt.plot(tc,values_cal[:,1], label = 'S', color = 'orange')
-plt.plot(tc,values_cal[:,2], label = 'W', color = 'cornflowerblue')
-plt.plot(observation_times_cal/31536000,10e2,'o')
-plt.ylim([10e1,10e4])
+plt.plot(tc,values_cal[:,0], label = 'R', color = 'red')
+plt.plot(tc,values_cal[:,1], label = 'S', color = 'green')
+plt.plot(tc,values_cal[:,2], label = 'W', color = 'blue')
+plt.axvline(x = observation_times_cal/31536000,color="magenta")
+plt.ylim([10e2,10e4])
 plt.yscale("log")
 plt.grid(True, which="both", ls="--")
 plt.title("Propagation of $\sigma$ along radial, along-track and cross-track directions Callisto")
@@ -302,6 +301,7 @@ plt.ylabel('Uncertainty $\sigma$ [m]')
 plt.xlabel('Time [years after J2000]')
 plt.legend()
 plt.show()
+
 
 
 #%%
@@ -345,13 +345,13 @@ dec = values_icrf[:,1]
 fig, axs = plt.subplots(2,figsize=(12, 6))
 fig.suptitle('Propagated uncertainties in Right Ascension and Declination of Callisto')
 
-
 axs[0].plot(tc,alpha, color = 'black')
 axs[0].set_ylabel('Right Ascension [rad]')
 axs[0].set_yscale("log")
-
+axs[0].axvline(x = observation_times_cal/31536000,color="magenta")
 axs[1].plot(time_cal/31536000,dec, color = 'black')
 axs[1].set_ylabel('Declination [rad]')
+axs[1].axvline(x = observation_times_cal/31536000,color="magenta")
 axs[1].set_xlabel('Time [years after J2000]')
 axs[1].set_yscale("log")
 plt.show()
