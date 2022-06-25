@@ -152,7 +152,7 @@ link_ends_vlbi = dict()
 link_ends_vlbi[observation.receiver] = ("Earth", "")
 link_ends_vlbi [observation.transmitter] = ("Jupiter", "")
 
-bias_stellar = observation.absolute_bias(np.array([3e-9,3e-9]))
+bias_stellar = observation.absolute_bias(np.array([1.93925472e-8,1.93925472e-8]))
 bias_vlbi = observation.absolute_bias(np.array([0.5e-9,0.5e-9]))
 
 parameter_settings.append(estimation_setup.parameter.absolute_observation_bias(link_ends_stellar,observation.angular_position_type))
@@ -195,10 +195,10 @@ for epoch in list(variational_equations_solver.state_history):
 Define global a priori covariance 
 """
 bias_matrix = np.zeros((4,4))
-np.fill_diagonal(bias_matrix,[3e-9**2,3e-9**2,0.5e-9**2,0.5e-9**2])
+np.fill_diagonal(bias_matrix,[1.93925472e-8**2,1.93925472e-8**2,0.5e-9**2,0.5e-9**2])
 
 
-covariance_a_priori = np.genfromtxt('/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/final_apriori/output_covariance_cal_jup_nominal_case.dat')
+covariance_a_priori = np.genfromtxt('/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/final_apriori/output_covariance_cal_jup_worst_case.dat')
 
 covariance_a_priori_bias = np.block([
     [covariance_a_priori,np.zeros((12,4))],
@@ -231,7 +231,7 @@ observation_simulation_settings_cal = observation.tabulated_simulation_settings(
 )
 
 
-# Define the observations for Jupiter VLBI 
+# Define the observations for Jupiter VLBI
 observation_times_jup = np.arange(simulation_start_epoch,simulation_end_epoch,53.4*constants.JULIAN_DAY)
 observation_simulation_settings_jup = observation.tabulated_simulation_settings(
     observation.angular_position_type,
@@ -372,11 +372,11 @@ Plot the propagated uncertainties
 """
 
 plt.figure(figsize=(9,5))
-plt.plot(tc,values_cal[:,0], label = 'R', color = 'salmon')
-plt.plot(tc,values_cal[:,1], label = 'S', color = 'orange')
-plt.plot(tc,values_cal[:,2], label = 'W', color = 'cornflowerblue')
-plt.plot(observation_times_cal/31536000, 1000,'o')
-plt.ylim([10e1,10e4])
+plt.plot(tc,values_cal[:,0], label = 'R', color = 'red')
+plt.plot(tc,values_cal[:,1], label = 'S', color = 'green')
+plt.plot(tc,values_cal[:,2], label = 'W', color = 'blue')
+plt.axvline(x = observation_times_cal/31536000,color="magenta")
+plt.ylim([10e2,10e4])
 plt.yscale("log")
 plt.grid(True, which="both", ls="--")
 plt.title("Propagation of $\sigma$ along radial, along-track and cross-track directions Callisto")
@@ -386,9 +386,9 @@ plt.legend()
 plt.show()
 
 plt.figure(figsize=(9,5))
-plt.plot(tj,values_jup[:,0], label = 'R', color = 'salmon')
-plt.plot(tj,values_jup[:,1], label = 'S', color = 'orange')
-plt.plot(tj,values_jup[:,2], label = 'W', color = 'cornflowerblue')
+plt.plot(tj,values_jup[:,0], label = 'R', color = 'red')
+plt.plot(tj,values_jup[:,1], label = 'S', color = 'green')
+plt.plot(tj,values_jup[:,2], label = 'W', color = 'blue')
 plt.ylim([1e0,10e4])
 plt.yscale("log")
 plt.grid(True, which="both", ls="--")
@@ -443,9 +443,10 @@ fig.suptitle('Propagated uncertainties in Right Ascension and Declination of Cal
 axs[0].plot(tc,alpha, color = 'black')
 axs[0].set_ylabel('Right Ascension [rad]')
 axs[0].set_yscale("log")
-
+axs[0].axvline(x = observation_times_cal/31536000,color="magenta")
 axs[1].plot(time_cal/31536000,dec, color = 'black')
 axs[1].set_ylabel('Declination [rad]')
 axs[1].set_xlabel('Time [years after J2000]')
 axs[1].set_yscale("log")
+axs[1].axvline(x = observation_times_cal/31536000,color="magenta")
 plt.show()
