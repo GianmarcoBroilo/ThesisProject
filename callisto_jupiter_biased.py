@@ -424,10 +424,10 @@ T = dict()
 propagated_icrf_cal = dict()
 formal_errors_icrf_cal = dict()
 for epoch in list(propagated_covariance_dict):
-    Ta_dict[epoch] = np.array([-states[epoch][3],states[epoch][2],0]).reshape(1,3)
-    Td_dict[epoch] = np.array([-states[epoch][2]*states[epoch][4],-states[epoch][3]*states[epoch][4],states[epoch][2]**2+states[epoch][3]**2]).reshape(1,3)
-    da_dr[epoch] = 1/(states[epoch][2]**2 + states[epoch][3]**2)*Ta_dict[epoch]
-    dd_dr[epoch] = 1/(np.linalg.norm(states[epoch][2:4])**2*np.sqrt(states[epoch][2]**2+states[epoch][3]**2))*Td_dict[epoch]
+    Ta_dict[epoch] = np.array([-states[epoch][1],states[epoch][0],0]).reshape(1,3)
+    Td_dict[epoch] = np.array([-states[epoch][0]*states[epoch][2],-states[epoch][1]*states[epoch][2],states[epoch][0]**2+states[epoch][1]**2]).reshape(1,3)
+    da_dr[epoch] = 1/(states[epoch][0]**2 + states[epoch][1]**2)*Ta_dict[epoch]
+    dd_dr[epoch] = 1/(np.linalg.norm(states[epoch][0:2])**2*np.sqrt(states[epoch][0]**2+states[epoch][1]**2))*Td_dict[epoch]
     T[epoch] = np.vstack((da_dr[epoch],dd_dr[epoch]))
     propagated_icrf_cal[epoch] = lalg.multi_dot([T[epoch],propagated_covariance_dict[epoch][:3,:3],T[epoch].T])
     formal_errors_icrf_cal[epoch] = np.sqrt(np.diag(propagated_icrf_cal[epoch]))
@@ -440,10 +440,10 @@ fig, axs = plt.subplots(2,figsize=(12, 6))
 fig.suptitle('Propagated uncertainties in Right Ascension and Declination of Callisto')
 
 
-axs[0].plot(tj,alpha, color = 'black')
+axs[0].plot(tc,alpha, color = 'black')
 axs[0].set_ylabel('Right Ascension [rad]')
 axs[0].set_yscale("log")
-axs[0].set_ylim([1e0,10e4])
+
 axs[1].plot(time_cal/31536000,dec, color = 'black')
 axs[1].set_ylabel('Declination [rad]')
 axs[1].set_xlabel('Time [years after J2000]')
