@@ -35,7 +35,7 @@ from tudatpy.kernel.astro import time_conversion
 spice.load_standard_kernels()
 
 # Set simulation start and end epochs START: 2029-01-01 END: 2032-01-01
-calendar_start = datetime.datetime(2029,1,1)
+calendar_start = datetime.datetime(2020,6,1)
 simulation_start_epoch = time_conversion.calendar_date_to_julian_day_since_epoch(calendar_start)*constants.JULIAN_DAY
 simulation_end_epoch = simulation_start_epoch +  2*constants.JULIAN_YEAR
 
@@ -135,6 +135,21 @@ Propagate the dynamics of Jupiter and Io and extract state transition and sensit
 """
 #Setup paramaters settings to propagate the state transition matrix
 parameter_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies)
+
+
+link_ends_io = dict()
+link_ends_io[observation.receiver] = ("Earth", "")
+link_ends_io[observation.transmitter] = ("Io", "")
+link_ends_jup = dict()
+link_ends_jup[observation.receiver] = ("Earth", "")
+link_ends_jup[observation.transmitter] = ("Jupiter", "")
+
+bias_stellar = observation.absolute_bias(np.array([1.93925472e-8,1.93925472e-8]))
+bias_vlbi = observation.absolute_bias(np.array([0.5e-9,0.5e-9]))
+
+parameter_settings.append(estimation_setup.parameter.absolute_observation_bias(link_ends_io,observation.angular_position_type))
+parameter_settings.append(estimation_setup.parameter.absolute_observation_bias(link_ends_jup,observation.angular_position_type))
+
 # Create the parameters that will be estimated
 parameters_to_estimate = estimation_setup.create_parameter_set(parameter_settings, bodies)
 
@@ -190,8 +205,17 @@ covariance_a_priori = np.block([
     [np.zeros((3,3)),np.zeros((3,3)), np.zeros((3,3)), covariance_velocity_initial_jup],
 ])
 
-covariance_a_priori2 = np.genfromtxt('/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/IO/covariance_matrix_io_jup_nominal.dat')
-covariance_a_priori_inverse = np.linalg.inv(covariance_a_priori2)
+covariance_a_priori2 = np.genfromtxt('/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/IO/output_covariance_io_jup_nominal_15.dat')
+
+bias_matrix = np.zeros((4,4))
+np.fill_diagonal(bias_matrix,[1.93925472e-8**2,1.93925472e-8**2,0.5e-9**2,0.5e-9**2])
+
+covariance_a_priori_bias = np.block([
+    [covariance_a_priori2,np.zeros((12,4))],
+    [np.zeros((4,12)),bias_matrix]
+])
+
+covariance_a_priori_inverse = np.linalg.inv(covariance_a_priori_bias)
 
 """"
 Observation Setup
@@ -199,16 +223,11 @@ Observation Setup
 #%%
 
 # Define the uplink link ends types
-link_ends_io = dict()
-link_ends_io[observation.receiver] = ("Earth", "")
-link_ends_io[observation.transmitter] = ("Io", "")
-link_ends_jup = dict()
-link_ends_jup[observation.receiver] = ("Earth", "")
-link_ends_jup[observation.transmitter] = ("Jupiter", "")
+
 
 # Create observation settings for each link/observable
-observation_settings_list_io = observation.angular_position(link_ends_io)
-observation_settings_list_jup = observation.angular_position(link_ends_jup)
+observation_settings_list_io = observation.angular_position(link_ends_io, bias_settings = bias_stellar)
+observation_settings_list_jup = observation.angular_position(link_ends_jup, bias_settings = bias_vlbi)
 
 # Define the observations for Io
 stellar_occ = datetime.datetime(2021,4,2)
@@ -285,8 +304,8 @@ pod_input.define_estimation_settings(
 weights_position_jup = noise_level_jup ** -2
 weights_position_io = noise_level_io ** -2
 
-pod_input.set_constant_weight_for_observable_and_link_ends(observation.position_observable_type,link_ends_jup,weights_position_jup)
-pod_input.set_constant_weight_for_observable_and_link_ends(observation.position_observable_type,link_ends_io,weights_position_io)
+pod_input.set_constant_weight_for_observable_and_link_ends(observation.angular_position_type,link_ends_jup,weights_position_jup)
+pod_input.set_constant_weight_for_observable_and_link_ends(observation.angular_position_type,link_ends_io,weights_position_io)
 
 """"
 Run the estimation
@@ -362,7 +381,7 @@ plt.figure(figsize=(9,5))
 plt.plot(ti,values_io[:,0], label = 'R', color = 'salmon')
 plt.plot(ti,values_io[:,1], label = 'S', color = 'orange')
 plt.plot(ti,values_io[:,2], label = 'W', color = 'cornflowerblue')
-#plt.plot(observation_times_cal/31536000, 100,'o')
+plt.plot(observation_times_io/31536000, 100,'o')
 plt.ylim([10e1,10e4])
 plt.yscale("log")
 plt.grid(True, which="both", ls="--")
@@ -392,3 +411,39 @@ Export Covariance Matrix to use as input
 covariance_matrix = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/IO/output_covariance_io_jup_nominal.dat",pod_output.covariance)
 
 
+#%%
+
+da_dr = dict()
+dd_dr = dict()
+Ta_dict = dict()
+Td_dict = dict()
+T = dict()
+propagated_icrf_cal = dict()
+formal_errors_icrf_cal = dict()
+for epoch in list(propagated_covariance_dict):
+    Ta_dict[epoch] = np.array([-states[epoch][1],states[epoch][0],0]).reshape(1,3)
+    Td_dict[epoch] = np.array([-states[epoch][0]*states[epoch][2],-states[epoch][1]*states[epoch][2],states[epoch][0]**2+states[epoch][1]**2]).reshape(1,3)
+    da_dr[epoch] = 1/(states[epoch][0]**2 + states[epoch][1]**2)*Ta_dict[epoch]
+    dd_dr[epoch] = 1/(np.linalg.norm(states[epoch][0:2])**2*np.sqrt(states[epoch][0]**2+states[epoch][1]**2))*Td_dict[epoch]
+    T[epoch] = np.vstack((da_dr[epoch],dd_dr[epoch]))
+    propagated_icrf_cal[epoch] = lalg.multi_dot([T[epoch],propagated_covariance_dict[epoch][:3,:3],T[epoch].T])
+    formal_errors_icrf_cal[epoch] = np.sqrt(np.diag(propagated_icrf_cal[epoch]))
+
+values_icrf = np.vstack(formal_errors_icrf_cal.values())
+alpha = values_icrf[:,0]
+dec = values_icrf[:,1]
+
+fig, axs = plt.subplots(2,figsize=(12, 6))
+fig.suptitle('Propagated uncertainties in Right Ascension and Declination of Io')
+
+
+axs[0].plot(ti,alpha, color = 'black')
+axs[0].set_ylabel('Right Ascension [rad]')
+axs[0].set_yscale("log")
+axs[0].axvline(x = observation_times_io/31536000,color="magenta")
+axs[1].plot(time_io/31536000,dec, color = 'black')
+axs[1].set_ylabel('Declination [rad]')
+axs[1].axvline(x = observation_times_io/31536000,color="magenta")
+axs[1].set_xlabel('Time [years after J2000]')
+axs[1].set_yscale("log")
+plt.show()
