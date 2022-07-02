@@ -4,7 +4,7 @@
 INPUT
 Data type: stellar occultation of Io, VLBI Jupiter
 A priori cov: uncertainties in the state of Io and Jupiter in RSW
-parameters: initial state of Io, initial state of Jupiter
+parameters: initial state of Io, initial state of Jupiter bias for stellar occultation and VLBI 
 OUTPUT
 cov: uncertainty and correlation of estimated parameters for both Io and Jupiter
 """
@@ -34,7 +34,7 @@ from tudatpy.kernel.astro import time_conversion
 # Load spice kernels
 spice.load_standard_kernels()
 
-# Set simulation start and end epochs START: 2029-01-01 END: 2032-01-01
+# Set simulation start and end epochs START: 2020-06-01 END: 2022-06-01
 calendar_start = datetime.datetime(2020,6,1)
 simulation_start_epoch = time_conversion.calendar_date_to_julian_day_since_epoch(calendar_start)*constants.JULIAN_DAY
 simulation_end_epoch = simulation_start_epoch +  2*constants.JULIAN_YEAR
