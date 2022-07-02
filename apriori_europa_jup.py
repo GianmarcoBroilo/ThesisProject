@@ -362,9 +362,9 @@ Plot the propagated uncertainties
 """
 
 plt.figure(figsize=(9,5))
-plt.plot(ti,values_io[:,0], label = 'R', color = 'red')
-plt.plot(ti,values_io[:,1], label = 'S', color = 'green')
-plt.plot(ti,values_io[:,2], label = 'W', color = 'blue')
+plt.plot(te,values_europa[:,0], label = 'R', color = 'red')
+plt.plot(te,values_europa[:,1], label = 'S', color = 'green')
+plt.plot(te,values_europa[:,2], label = 'W', color = 'blue')
 plt.ylim([10e1,10e4])
 plt.yscale("log")
 plt.grid(True, which="both", ls="--")
