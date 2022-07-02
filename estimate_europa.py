@@ -221,7 +221,7 @@ observation_simulation_settings_stellar = observation.tabulated_simulation_setti
 
 
 # Add noise level of 15km to position observable
-noise_level_europa = 200e3
+noise_level_europa = 150e3
 observation.add_gaussian_noise_to_settings(
     [observation_simulation_settings_pos],
     noise_level_europa,
