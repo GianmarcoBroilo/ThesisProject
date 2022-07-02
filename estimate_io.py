@@ -1,8 +1,9 @@
 ## Context
 """
 This code is used to estimate the covariance matrix that will be used as a new "a priori covariance matrix" in the
-estimation.py script. This model simulates 3D cartesian position observables every 2 days on both Callisto
-with accuracy that is the same as the a priori uncertainty.
+estimation.py script. This model simulates 3D cartesian position observables every 2 days on Io
+with accuracy that is the same as the a priori uncertainty. Once the corrected a priori covariance is calculated it is possible to
+estimate the covariance matrix with the stellar occultation and propagate it. 
 """
 #%%
 
@@ -34,7 +35,7 @@ from sklearn.preprocessing import normalize
 # Load spice kernels
 spice.load_standard_kernels()
 
-# Set simulation start and end epochs START: 2023-04-01 END: 2025-04-01
+# Set simulation start and end epochs START: 2020-06-01 END: 2022-06-01
 calendar_start = datetime.datetime(2020,6,1)
 simulation_start_epoch = time_conversion.calendar_date_to_julian_day_since_epoch(calendar_start)*constants.JULIAN_DAY
 simulation_end_epoch = simulation_start_epoch +  2*constants.JULIAN_YEAR
