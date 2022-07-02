@@ -44,7 +44,7 @@ simulation_end_epoch = simulation_start_epoch +  2*constants.JULIAN_YEAR
 
 
 # Create default body settings
-bodies_to_create = ["Earth", "Io", "Jupiter","Sun","Saturn","Europa"]
+bodies_to_create = ["Earth", "Io", "Jupiter","Sun","Saturn","Europa","Ganymede"]
 
 time_step = 1500
 initial_time = simulation_start_epoch - 5*time_step
@@ -82,7 +82,7 @@ bodies_to_propagate = ["Europa","Jupiter"]
 
 # Define central bodies of propagation
 central_bodies = []
-for body_name in bodies_to_create:
+for body_name in bodies_to_propagate:
     if body_name == "Europa":
         central_bodies.append("Jupiter")
     elif body_name == "Jupiter":
@@ -96,6 +96,8 @@ acceleration_settings_europa = dict(
     Sun = [propagation_setup.acceleration.point_mass_gravity()],
     Saturn = [propagation_setup.acceleration.point_mass_gravity()],
     Io = [propagation_setup.acceleration.mutual_spherical_harmonic_gravity(
+        2,2,2,2)],
+    Ganymede = [propagation_setup.acceleration.mutual_spherical_harmonic_gravity(
         2,2,2,2)]
 )
 acceleration_settings_jup = dict(
@@ -223,7 +225,7 @@ observation_simulation_settings_europa = observation.tabulated_simulation_settin
 )
 
 # Define the observations for Jupiter position observable
-observation_times_jup = np.arange(simulation_start_epoch,simulation_end_epoch,3*constants.JULIAN_DAY)
+observation_times_jup = np.arange(simulation_start_epoch,simulation_end_epoch,10*constants.JULIAN_DAY)
 
 observation_simulation_settings_jup = observation.tabulated_simulation_settings(
     observation.position_observable_type,
@@ -235,7 +237,7 @@ observation_simulation_settings_jup = observation.tabulated_simulation_settings(
 
 
 # Add noise level of 25km to position observable
-noise_level_io = 150e3
+noise_level_europa = 150e3
 observation.add_gaussian_noise_to_settings(
     [observation_simulation_settings_europa],
     noise_level_europa,
@@ -392,5 +394,4 @@ plt.show()
 Export Covariance Matrix to use as input 
 """
 
-covariance_matrix = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/IO/output_covariance_io_jup_nominal.dat",pod_output.covariance)
-
+covariance_matrix = np.savetxt("/Users/gianmarcobroilo/Desktop/ThesisResults/vlbi-corrected/output_covariance_europa_jup_nominal.dat",pod_output.covariance)
