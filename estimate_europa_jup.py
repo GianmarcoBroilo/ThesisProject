@@ -82,7 +82,7 @@ bodies_to_propagate = ["Europa","Jupiter"]
 
 # Define central bodies of propagation
 central_bodies = []
-for body_name in bodies_to_create:
+for body_name in bodies_to_propagate:
     if body_name == "Europa":
         central_bodies.append("Jupiter")
     elif body_name == "Jupiter":
@@ -95,6 +95,8 @@ acceleration_settings_europa = dict(
     Sun = [propagation_setup.acceleration.point_mass_gravity()],
     Saturn = [propagation_setup.acceleration.point_mass_gravity()],
     Io = [propagation_setup.acceleration.mutual_spherical_harmonic_gravity(
+        2,2,2,2)],
+    Ganymede = [propagation_setup.acceleration.mutual_spherical_harmonic_gravity(
         2,2,2,2)]
 )
 acceleration_settings_jup = dict(
