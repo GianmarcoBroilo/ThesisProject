@@ -34,8 +34,8 @@ from sklearn.preprocessing import normalize
 # Load spice kernels
 spice.load_standard_kernels()
 
-# Set simulation start and end epochs START: 2023-01-01 END: 2027-01-01
-calendar_start = datetime.datetime(2020,4,2)
+# Set simulation start and end epochs START: 2019-06-01 END: 2021-06-01
+calendar_start = datetime.datetime(2019,6,1)
 simulation_start_epoch = time_conversion.calendar_date_to_julian_day_since_epoch(calendar_start)*constants.JULIAN_DAY
 simulation_end_epoch = simulation_start_epoch +  2*constants.JULIAN_YEAR
 
@@ -56,10 +56,10 @@ global_frame_orientation = "J2000"
 body_settings = environment_setup.get_default_body_settings(
     bodies_to_create, global_frame_origin, global_frame_orientation)
 
-# Create tabulated settings fo Callisto and Jupiter
-original_io_ephemeris_settings = body_settings.get("Io").ephemeris_settings
-body_settings.get("Io").ephemeris_settings = environment_setup.ephemeris.tabulated_from_existing(
-    original_io_ephemeris_settings,initial_time, final_time, time_step)
+# Create tabulated settings fo Europa and Jupiter
+original_europa_ephemeris_settings = body_settings.get("Europa").ephemeris_settings
+body_settings.get("Europa").ephemeris_settings = environment_setup.ephemeris.tabulated_from_existing(
+    original_europa_ephemeris_settings,initial_time, final_time, time_step)
 
 original_jupiter_ephemeris_settings = body_settings.get("Jupiter").ephemeris_settings
 body_settings.get("Jupiter").ephemeris_settings = environment_setup.ephemeris.tabulated_from_existing(
@@ -67,8 +67,8 @@ body_settings.get("Jupiter").ephemeris_settings = environment_setup.ephemeris.ta
 
 
 # Rotation model
-body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.synchronous("Jupiter",
-                                                                                               global_frame_orientation,"Io_Fixed")
+body_settings.get("Europa").rotation_model_settings = environment_setup.rotation_model.synchronous("Jupiter",
+                                                                                               global_frame_orientation,"Europa_Fixed")
 # Create system of bodies
 bodies = environment_setup.create_system_of_bodies(body_settings)
 
@@ -78,31 +78,31 @@ Propagation setup
 """
 
 # Define bodies that are propagated
-bodies_to_propagate = ["Io","Jupiter"]
+bodies_to_propagate = ["Europa","Jupiter"]
 
 # Define central bodies of propagation
 central_bodies = []
 for body_name in bodies_to_create:
-    if body_name == "Io":
+    if body_name == "Europa":
         central_bodies.append("Jupiter")
     elif body_name == "Jupiter":
         central_bodies.append("Sun")
 
 
 # Create the acceleration model
-acceleration_settings_io = dict(
+acceleration_settings_europa = dict(
     Jupiter = [propagation_setup.acceleration.mutual_spherical_harmonic_gravity(
         8,0,2,2)],
     Sun = [propagation_setup.acceleration.point_mass_gravity()],
     Saturn = [propagation_setup.acceleration.point_mass_gravity()],
-    Europa = [propagation_setup.acceleration.mutual_spherical_harmonic_gravity(
+    Io = [propagation_setup.acceleration.mutual_spherical_harmonic_gravity(
         2,2,2,2)]
 )
 acceleration_settings_jup = dict(
     Sun=[propagation_setup.acceleration.point_mass_gravity()],
     Saturn = [propagation_setup.acceleration.point_mass_gravity()]
 )
-acceleration_settings = {"Io": acceleration_settings_io, "Jupiter": acceleration_settings_jup}
+acceleration_settings = {"Europa": acceleration_settings_europa, "Jupiter": acceleration_settings_jup}
 
 acceleration_models = propagation_setup.create_acceleration_models(
     bodies,acceleration_settings,bodies_to_propagate,central_bodies
@@ -110,7 +110,7 @@ acceleration_models = propagation_setup.create_acceleration_models(
 
 # Define the initial state
 """
-The initial state of Callisto and Jupiter that will be propagated is now defined 
+The initial state of Europa and Jupiter that will be propagated is now defined 
 """
 
 # Set the initial state of Io and Jupiter
@@ -133,7 +133,7 @@ propagator_settings = propagation_setup.propagator.translational(
     termination_condition
 )
 """
-Propagate the dynamics of Jupiter and Callisto and extract state transition and sensitivity matrices
+Propagate the dynamics of Jupiter and Europa and extract state transition and sensitivity matrices
 """
 #Setup paramaters settings to propagate the state transition matrix
 parameter_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies)
@@ -156,19 +156,19 @@ state_transition_matrix = variational_equations_solver.state_transition_matrix_h
 sensitivity_matrix = variational_equations_solver.sensitivity_matrix_history
 
 """"
-Define the a priori covariance of Callisto 
+Define the a priori covariance of Europa
 """
 #%%
 #15km RSW position 0.15,1.15,0.75m/s RSW velocity
-rotation_rsw_to_inertial_dict_io = dict()
+rotation_rsw_to_inertial_dict_eu = dict()
 for epoch in list(variational_equations_solver.state_history):
-    rotation_rsw_to_inertial_dict_io[epoch] = frame_conversion.rsw_to_inertial_rotation_matrix(states[epoch][:6]).reshape(3,3)
-uncertainties_rsw_io = np.zeros((3,3))
-np.fill_diagonal(uncertainties_rsw_io,[15e3,15e3,15e3])
-uncertainties_rsw_velocity_io = np.zeros((3,3))
-np.fill_diagonal(uncertainties_rsw_velocity_io,[0.15,1.15,0.75])
-covariance_position_initial_io = lalg.multi_dot([rotation_rsw_to_inertial_dict_io[simulation_start_epoch],uncertainties_rsw_io**2,rotation_rsw_to_inertial_dict_io[simulation_start_epoch].T])
-covariance_velocity_initial_io = lalg.multi_dot([rotation_rsw_to_inertial_dict_io[simulation_start_epoch],uncertainties_rsw_velocity_io**2,rotation_rsw_to_inertial_dict_io[simulation_start_epoch].T])
+    rotation_rsw_to_inertial_dict_eu[epoch] = frame_conversion.rsw_to_inertial_rotation_matrix(states[epoch][:6]).reshape(3,3)
+uncertainties_rsw_eu = np.zeros((3,3))
+np.fill_diagonal(uncertainties_rsw_eu,[15e3,15e3,15e3])
+uncertainties_rsw_velocity_eu = np.zeros((3,3))
+np.fill_diagonal(uncertainties_rsw_velocity_eu,[0.15,1.15,0.75])
+covariance_position_initial_eu = lalg.multi_dot([rotation_rsw_to_inertial_dict_eu[simulation_start_epoch],uncertainties_rsw_eu**2,rotation_rsw_to_inertial_dict_eu[simulation_start_epoch].T])
+covariance_velocity_initial_eu = lalg.multi_dot([rotation_rsw_to_inertial_dict_eu[simulation_start_epoch],uncertainties_rsw_velocity_eu**2,rotation_rsw_to_inertial_dict_eu[simulation_start_epoch].T])
 
 """"
 Define the a priori covariance of Jupiter 
@@ -189,8 +189,8 @@ covariance_velocity_initial_jup = lalg.multi_dot([rotation_rsw_to_inertial_dict_
 Define global a priori covariance 
 """
 covariance_a_priori = np.block([
-    [covariance_position_initial_io, np.zeros((3,3)), np.zeros((3,3)),np.zeros((3,3))],
-    [np.zeros((3,3)),covariance_velocity_initial_io, np.zeros((3,3)), np.zeros((3,3))],
+    [covariance_position_initial_eu, np.zeros((3,3)), np.zeros((3,3)),np.zeros((3,3))],
+    [np.zeros((3,3)),covariance_velocity_initial_eu, np.zeros((3,3)), np.zeros((3,3))],
     [np.zeros((3,3)),np.zeros((3,3)),covariance_position_initial_jup, np.zeros((3,3))],
     [np.zeros((3,3)),np.zeros((3,3)), np.zeros((3,3)), covariance_velocity_initial_jup]
 ])
@@ -203,21 +203,21 @@ Observation Setup
 # Define the uplink/downlink link ends types
 link_ends_jup = dict()
 link_ends_jup[observation.observed_body] = ("Jupiter", "")
-link_ends_io = dict()
-link_ends_io[observation.observed_body] = ("Io","")
+link_ends_europa = dict()
+link_ends_europa[observation.observed_body] = ("Europa","")
 
 
 # Create observation settings for each link/observable
 observation_settings_list_jup = observation.cartesian_position(link_ends_jup)
-observation_settings_list_position = observation.cartesian_position(link_ends_io)
+observation_settings_list_position = observation.cartesian_position(link_ends_europa)
 
 
-# Define the observations for Callisto
+# Define the observations for Europa
 observations_position = np.arange(simulation_start_epoch,simulation_end_epoch, 5*constants.JULIAN_DAY)
 
-observation_simulation_settings_io = observation.tabulated_simulation_settings(
+observation_simulation_settings_europa = observation.tabulated_simulation_settings(
     observation.position_observable_type,
-    link_ends_io,
+    link_ends_europa,
     observations_position,
     reference_link_end_type = observation.observed_body
 )
@@ -237,8 +237,8 @@ observation_simulation_settings_jup = observation.tabulated_simulation_settings(
 # Add noise level of 25km to position observable
 noise_level_io = 150e3
 observation.add_gaussian_noise_to_settings(
-    [observation_simulation_settings_io],
-    noise_level_io,
+    [observation_simulation_settings_europa],
+    noise_level_europa,
     observation.position_observable_type
 )
 
@@ -263,10 +263,10 @@ observation_settings_list.append(observation_settings_list_position)
 
 observation_simulation_settings = []
 observation_simulation_settings.append(observation_simulation_settings_jup)
-observation_simulation_settings.append(observation_simulation_settings_io)
+observation_simulation_settings.append(observation_simulation_settings_europa)
 
 
-# Create the estimation object for Callisto and Jupiter
+# Create the estimation object for Europa and Jupiter
 estimator = numerical_simulation.Estimator(
     bodies,
     parameters_to_estimate,
@@ -290,10 +290,10 @@ pod_input.define_estimation_settings(
 
 # Setup the weight matrix W with weights for Callisto and weights for Jupiter
 weights_position_jup = noise_level_jup ** -2
-weights_position_io = noise_level_io ** -2
+weights_position_europa = noise_level_europa ** -2
 
 pod_input.set_constant_weight_for_observable_and_link_ends(observation.position_observable_type,link_ends_jup,weights_position_jup)
-pod_input.set_constant_weight_for_observable_and_link_ends(observation.position_observable_type,link_ends_io,weights_position_io)
+pod_input.set_constant_weight_for_observable_and_link_ends(observation.position_observable_type,link_ends_europa,weights_position_europa)
 
 
 """"
@@ -326,9 +326,9 @@ cov_initial = pod_output.covariance
 # Create covariance dictionaries
 propagated_times = dict()
 propagated_covariance_rsw_dict = dict()
-propagated_covariance_rsw_dict_io = dict()
+propagated_covariance_rsw_dict_eu = dict()
 propagated_covariance_rsw_dict_jup = dict()
-propagated_formal_errors_rsw_dict_io = dict()
+propagated_formal_errors_rsw_dict_eu = dict()
 propagated_formal_errors_rsw_dict_jup = dict()
 
 time = np.arange(simulation_start_epoch, simulation_end_epoch, 86400)
@@ -343,18 +343,18 @@ propagated_covariance = propagation[1]
 propagated_covariance_dict = {propagated_times[i]: propagated_covariance[i] for i in range(len(propagated_times))}
 
 for epoch in list(propagated_covariance_dict):
-    propagated_covariance_rsw_dict_io[epoch] = lalg.multi_dot([rotation_rsw_to_inertial_dict_io[epoch].T,propagated_covariance_dict[epoch][:3,:3],rotation_rsw_to_inertial_dict_io[epoch]])
-    propagated_formal_errors_rsw_dict_io[epoch] = np.sqrt(np.diag(propagated_covariance_rsw_dict_io[epoch]))
+    propagated_covariance_rsw_dict_eu[epoch] = lalg.multi_dot([rotation_rsw_to_inertial_dict_eu[epoch].T,propagated_covariance_dict[epoch][:3,:3],rotation_rsw_to_inertial_dict_eu[epoch]])
+    propagated_formal_errors_rsw_dict_eu[epoch] = np.sqrt(np.diag(propagated_covariance_rsw_dict_eu[epoch]))
     propagated_covariance_rsw_dict_jup[epoch] = lalg.multi_dot([rotation_rsw_to_inertial_dict_jup[epoch].T,propagated_covariance_dict[epoch][6:9,6:9],rotation_rsw_to_inertial_dict_jup[epoch]])
     propagated_formal_errors_rsw_dict_jup[epoch] = np.sqrt(np.diag(propagated_covariance_rsw_dict_jup[epoch]))
 
 
 # times are equal to epochs in state history
-time_io = np.array(list(propagated_times))
+time_europa = np.array(list(propagated_times))
 time_jup = np.array(list(propagated_times))
-values_io = np.vstack(propagated_formal_errors_rsw_dict_io.values())
+values_europa = np.vstack(propagated_formal_errors_rsw_dict_eu.values())
 values_jup = np.vstack(propagated_formal_errors_rsw_dict_jup.values())
-ti = time_io/31536000
+te = time_europa/31536000
 tj = time_jup/31536000
 #%%
 """"
@@ -362,14 +362,13 @@ Plot the propagated uncertainties
 """
 
 plt.figure(figsize=(9,5))
-plt.plot(ti,values_io[:,0], label = 'R', color = 'salmon')
-plt.plot(ti,values_io[:,1], label = 'S', color = 'orange')
-plt.plot(ti,values_io[:,2], label = 'W', color = 'cornflowerblue')
-#plt.plot(observation_times_cal/31536000, 100,'o')
+plt.plot(ti,values_io[:,0], label = 'R', color = 'red')
+plt.plot(ti,values_io[:,1], label = 'S', color = 'green')
+plt.plot(ti,values_io[:,2], label = 'W', color = 'blue')
 plt.ylim([10e1,10e4])
 plt.yscale("log")
 plt.grid(True, which="both", ls="--")
-plt.title("Propagation of $\sigma$ along radial, along-track and cross-track directions Io")
+plt.title("Propagation of $\sigma$ along radial, along-track and cross-track directions Europa")
 plt.ylabel('Uncertainty $\sigma$ [m]')
 plt.xlabel('Time [years after J2000]')
 plt.legend()
@@ -387,6 +386,7 @@ plt.ylabel('Uncertainty $\sigma$ [m]')
 plt.xlabel('Time [years after J2000]')
 plt.legend()
 plt.show()
+
 #%%
 """"
 Export Covariance Matrix to use as input 
