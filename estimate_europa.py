@@ -35,8 +35,8 @@ from sklearn.preprocessing import normalize
 # Load spice kernels
 spice.load_standard_kernels()
 
-# Set simulation start and end epochs START: 2023-04-01 END: 2025-04-01
-calendar_start = datetime.datetime(2020,6,1)
+# Set simulation start and end epochs START: 2019-06-01 END: 2021-06-01
+calendar_start = datetime.datetime(2019,6,1)
 simulation_start_epoch = time_conversion.calendar_date_to_julian_day_since_epoch(calendar_start)*constants.JULIAN_DAY
 simulation_end_epoch = simulation_start_epoch +  2*constants.JULIAN_YEAR
 
@@ -202,7 +202,7 @@ observation_settings_list_stellar = observation.angular_position(link_ends_stell
 
 # Define the observations for Europa
 observations_position = np.arange(simulation_start_epoch,simulation_end_epoch, 2*constants.JULIAN_DAY)
-stellar_occ = datetime.datetime(2021,2,4)
+stellar_occ = datetime.datetime(2020,6,22)
 stellar_occ = time_conversion.calendar_date_to_julian_day_since_epoch(stellar_occ)*constants.JULIAN_DAY
 observation_times_europa = np.array([stellar_occ])
 
