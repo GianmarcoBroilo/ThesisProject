@@ -202,7 +202,7 @@ observation_settings_list_stellar = observation.angular_position(link_ends_stell
 
 # Define the observations for Europa
 observations_position = np.arange(simulation_start_epoch,simulation_end_epoch, 2*constants.JULIAN_DAY)
-stellar_occ = datetime.datetime(2021,4,2)
+stellar_occ = datetime.datetime(2021,2,4)
 stellar_occ = time_conversion.calendar_date_to_julian_day_since_epoch(stellar_occ)*constants.JULIAN_DAY
 observation_times_europa = np.array([stellar_occ])
 
