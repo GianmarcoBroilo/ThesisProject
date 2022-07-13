@@ -152,22 +152,21 @@ states_array = result2array(states)
 vector_moon_earth = [dep_var_array[1344,1],dep_var_array[1344,2]]
 unit_vector_moon_earth = vector_moon_earth/np.linalg.norm(vector_moon_earth)
 
-vector_jup_moon = [states_array[1344,1], states_array[1344,2]]
-unit_vector_jup_moon = vector_jup_moon/np.linalg.norm(vector_jup_moon)
-
-dot_product = np.dot(unit_vector_moon_earth,unit_vector_jup_moon)
+V = [states_array[1344,4]/(np.sqrt(states_array[1344,4]**2+states_array[1344,5]**2)), states_array[1344,5]/(np.sqrt(states_array[1344,4]**2+states_array[1344,5]**2))]
+unit_vector_vel = V/np.linalg.norm(V)
+dot_product = np.dot(unit_vector_moon_earth,unit_vector_vel)
 angle = np.arccos([dot_product])
 angle_deg = angle*180/np.pi
 
 plt.figure(figsize=(7,7))
-
 plt.title(f'Trajectory of Callisto w.r.t Jupiter')
 plt.scatter(0, 0, zorder = 1, marker='.', label="Jupiter", color='darkorange',s=600,linewidth=1, edgecolor='k')
-plt.scatter(state_callisto[1], state_callisto[2], zorder = 3, marker='.', label="Callisto", color='blue', s = 250,linewidth=1, edgecolor='k')
+plt.scatter(state_callisto[0], state_callisto[1], zorder = 3, marker='.', label="Callisto", color='blue', s = 250,linewidth=1, edgecolor='k')
 plt.plot(states_array[:, 1], states_array[:, 2], zorder = 2, label="orbit", color = 'grey', linestyle='-.')
-plt.arrow(state_callisto[1], state_callisto[2], vector_moon_earth[0]/1e3, vector_moon_earth[1]/1e3, head_width=1e8, color='r')
-plt.arrow(state_callisto[1], state_callisto[2], vector_jup_moon[0], vector_jup_moon[1], head_width=1e8, color='r')
-plt.text(2.1e9,0.1e9,"to Earth",color = 'red')
+plt.arrow(state_callisto[0], state_callisto[1], vector_moon_earth[0]/1e3, vector_moon_earth[1]/1e3, head_width=1e8, color='k')
+plt.arrow(state_callisto[0], state_callisto[1], V[0]*1e9, V[1]*1e9, head_width=1e8, color='r')
+plt.text(-0.9e9,2.1e9,"to Earth",color = 'k')
+plt.text(-1.8e9,1.7e9,r"$\vec v$",color = 'r')
 plt.legend()
 plt.xlim([-3e9,3e9])
 plt.ylim([-3e9,3e9])
